@@ -1,31 +1,32 @@
-const { Bot, session } = require('grammy');
-const express = require('express');
 require('dotenv').config();
+const { Bot, session, InlineKeyboard } = require('grammy');
+const { createClient } = require('@supabase/supabase-js');
+const express = require('express');
 
-// 1. O'zgaruvchilarni olish
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const PORT = process.env.PORT || 8080;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_KEY;
+const ADMIN_ID = 7121724430;
 
 const bot = new Bot(BOT_TOKEN);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+bot.use(session({ initial: () => ({ step: 'idle' }) }));
+
+bot.command('start', async (ctx) => {
+    await ctx.reply('Assalomu alaykum! "Fayzli Savdo"ga xush kelibsiz!', {
+        reply_markup: new InlineKeyboard().webApp('🛍 Bozorni ochish', 'https://fayzlisavdo.vercel.app')
+    });
+});
+
+bot.command('admin', async (ctx) => {
+    if (ctx.from.id !== ADMIN_ID) return ctx.reply('⛔ Ruxsat yo‘q.');
+    await ctx.reply('👑 <b>Admin Panel</b>', { 
+        parse_mode: 'HTML', 
+        reply_markup: new InlineKeyboard().text('📂 Kategoriyalar', 'admin_categories') 
+    });
+});
+
+bot.start();
 const app = express();
-
-app.use(express.json());
-
-// 2. Oddiy bot ishlashini tekshirish uchun start
-bot.command('start', (ctx) => {
-    ctx.reply('Assalomu alaykum! Kattaqo\'rg\'on bozoriga xush kelibsiz!');
-});
-
-// 3. Railway serveri uchun
-app.get('/', (req, res) => {
-    res.send('Kattaqo\'rg\'on Bozori boti ishlamoqda!');
-});
-
-// 4. Bot va Serverni ishga tushirish
-bot.start({
-    onStart: (botInfo) => console.log(`🤖 Bot @${botInfo.username} ishga tushdi!`)
-});
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🌐 Server ${PORT} portida tinglamoqda...`);
-});
+app.listen(process.env.PORT || 3000);
